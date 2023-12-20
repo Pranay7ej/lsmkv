@@ -62,29 +62,29 @@ plus unit tests for the skiplist (including a reader running during inserts), bl
 
 ## numbers
 
-`db_bench` with 1M entries, 16 byte keys, 100 byte values, no fsync, on a 2 core VM:
+`db_bench` with 1M entries, 16 byte keys, 100 byte values, no fsync. from the CI bench job (GitHub's ubuntu-24.04 runner):
 
 ```
-fillseq      :    1.988 micros/op     503013 ops/s     55.6 MB/s
-fillrandom   :    3.003 micros/op     332963 ops/s     36.8 MB/s
-overwrite    :    4.838 micros/op     206691 ops/s     22.9 MB/s
-readrandom   :   10.258 micros/op      97487 ops/s
-readmissing  :    0.563 micros/op    1776896 ops/s
-readseq      :    0.477 micros/op    2095094 ops/s    231.8 MB/s
+fillseq      :    7.613 micros/op     131356 ops/s     14.5 MB/s
+fillrandom   :    5.282 micros/op     189320 ops/s     20.9 MB/s
+overwrite    :    7.939 micros/op     125955 ops/s     13.9 MB/s
+readrandom   :    7.683 micros/op     130156 ops/s
+readmissing  :    0.384 micros/op    2607474 ops/s
+readseq      :    0.366 micros/op    2731219 ops/s    302.1 MB/s
 
-write amplification: 3.45
+write amplification: 3.55
 ```
 
 same thing without bloom filters:
 
 ```
-readrandom   :   15.492 micros/op      64548 ops/s
-readmissing  :   15.273 micros/op      65474 ops/s
+readrandom   :   11.548 micros/op      86593 ops/s
+readmissing  :   11.850 micros/op      84387 ops/s
 ```
 
-so for keys that don't exist the bloom filter makes lookups ~27x faster, since it skips the block read entirely. readrandom also gets faster (10 vs 15 us), partly because ~37% of those keys were never written (fillrandom leaves gaps) and partly because it skips levels that don't have the key.
+so for keys that don't exist the bloom filter makes lookups ~30x faster, since it skips the block read entirely. readrandom also gets faster (7.7 vs 11.5 us), partly because ~37% of those keys were never written (fillrandom leaves gaps) and partly because it skips levels that don't have the key.
 
-write amp of ~3.5 is low because the data only reached L2. it'd grow with more levels.
+write amp of ~3.5 is low because the data only reached L2. it'd grow with more levels. (writes are slower on the CI runner than on my VM, reads faster. disk vs CPU I guess, didn't dig into it.)
 
 ## what's missing
 - no compression (would add snappy/zstd per block)
