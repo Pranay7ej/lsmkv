@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitize: ["", "address", "thread"]
+    name: test (${{ matrix.sanitize || 'plain' }})
+    steps:
+      - uses: actions/checkout@v5
+      - run: cmake -S . -B build -DLSMKV_SANITIZE=${{ matrix.sanitize }}
+      - run: cmake --build build -j
+      - run: ctest --test-dir build --output-on-failure -j2
+
+  bench:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLSMKV_BUILD_TESTS=OFF
+      - run: cmake --build build -j
+      - name: db_bench
+        run: |
+          ./build/db_bench --num 1000000 | tee bench.txt
+          ./build/db_bench --num 1000000 --bloom_bits 0 | grep -E "readrandom|readmissing" | sed 's/^/no bloom: /' | tee -a bench.txt
+          { echo '```'; cat bench.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
