@@ -28,4 +28,5 @@ jobs:
         run: |
           ./build/db_bench --num 1000000 | tee bench.txt
           ./build/db_bench --num 1000000 --bloom_bits 0 | grep -E "readrandom|readmissing" | sed 's/^/no bloom: /' | tee -a bench.txt
+          .github/run_and_report.sh db_bench cat bench.txt
           { echo '```'; cat bench.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
